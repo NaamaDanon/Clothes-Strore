@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        form { max-width: 300px; margin: auto; }
+        label { display: block; margin-top: 15px; }
+        input[type="text"], input[type="password"] {
+            width: 100%; padding: 8px; box-sizing: border-box;
+        }
+        button { margin-top: 20px; width: 100%; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h2>Register</h2>
+    <form id="registerForm">
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required autocomplete="username">
+
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required autocomplete="new-password">
+
+        <button type="submit">Register</button>
+    </form>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            const res = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (res.ok) {
+                alert('Registration successful!');
+                window.location.href = 'login.html';
+            } else {
+                const data = await res.json().catch(() => ({}));
+                if (data && data.error === 'Username taken') {
+                    alert('Username is already taken.');
+                } else {
+                    alert('Registration failed. Please try again.');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

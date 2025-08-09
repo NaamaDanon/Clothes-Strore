@@ -1,0 +1,24 @@
+{
+  "name": "clothes-strore",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NaamaDanon/Clothes-Strore.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NaamaDanon/Clothes-Strore/issues"
+  },
+  "homepage": "https://github.com/NaamaDanon/Clothes-Strore#readme",
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "express": "^5.1.0"
+  }
+}

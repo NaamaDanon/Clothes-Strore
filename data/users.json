@@ -1,0 +1,12 @@
+{
+  "admin": {
+    "password": "admin",
+    "cart": [],
+    "purchases": []
+  },
+  "chen": {
+    "password": "chen",
+    "cart": [],
+    "purchases": []
+  }
+}

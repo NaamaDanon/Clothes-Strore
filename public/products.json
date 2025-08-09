@@ -1,0 +1,123 @@
+[
+  {
+    "id": 1,
+    "title": "Black T-Shirt",
+    "description": "Basic black T-shirt",
+    "image": "images/products/tshirt-black.jpg"
+  },
+  {
+    "id": 2,
+    "title": "White T-Shirt",
+    "description": "Basic white T-shirt",
+    "image": "images/products/tshirt-white.jpg"
+  },
+  {
+    "id": 3,
+    "title": "Red T-Shirt",
+    "description": "Basic red T-shirt",
+    "image": "images/products/tshirt-red.jpg"
+  },
+  {
+    "id": 4,
+    "title": "Blue T-Shirt",
+    "description": "Basic blue T-shirt",
+    "image": "images/products/tshirt-blue.jpg"
+  },
+  {
+    "id": 5,
+    "title": "Green T-Shirt",
+    "description": "Basic green T-shirt",
+    "image": "images/products/tshirt-green.jpg"
+  },
+   {
+    "id": 6,
+    "title": "Black Tank Top",
+    "description": "Black sleeveless tank",
+    "image": "images/products/tank-black.jpg"
+  },
+  {
+    "id": 7,
+    "title": "White Tank Top",
+    "description": "White sleeveless tank",
+    "image": "images/products/tank-white.jpg"
+  },
+  {
+    "id": 8,
+    "title": "Red Tank Top",
+    "description": "Red sleeveless tank",
+    "image": "images/products/tank-red.jpg"
+  },
+  {
+    "id": 9,
+    "title": "Blue Tank Top",
+    "description": "Blue sleeveless tank",
+    "image": "images/products/tank-blue.jpg"
+  },
+  {
+    "id": 10,
+    "title": "Green Tank Top",
+    "description": "Green sleeveless tank",
+    "image": "images/products/tank-green.jpg"
+  },
+  {
+    "id": 11,
+    "title": "Black Sweater",
+    "description": "Cozy black sweater",
+    "image": "images/products/sweater-black.jpg"
+  },
+  {
+    "id": 12,
+    "title": "White Sweater",
+    "description": "Cozy white sweater",
+    "image": "images/products/sweater-white.jpg"
+  },
+  {
+    "id": 13,
+    "title": "Red Sweater",
+    "description": "Cozy red sweater",
+    "image": "images/products/sweater-red.jpg"
+  },
+  {
+    "id": 14,
+    "title": "Blue Sweater",
+    "description": "Cozy blue sweater",
+    "image": "images/products/sweater-blue.jpg"
+  },
+  {
+    "id": 15,
+    "title": "Green Sweater",
+    "description": "Cozy green sweater",
+    "image": "images/products/sweater-green.jpg"
+  },
+  {
+    "id": 16,
+    "title": "Black Hoodie",
+    "description": "Elegant black hoodie", 
+    "image": "images/products/hoodie-black.jpg"
+  },
+  {
+    "id": 17,
+    "title": "White Hoodie",
+    "description": "Elegant white hoodie",
+    "image": "images/products/hoodie-white.jpg"
+  },
+  {
+    "id": 18,
+    "title": "Red Hoodie",
+    "description": "Elegant red hoodie",
+    "image": "images/products/hoodie-red.jpg"
+  },
+  {
+    "id": 19,
+    "title": "Blue Hoodie",
+    "description": "Elegant blue hoodie",
+    "image": "images/products/hoodie-blue.jpg"
+  },
+  {
+    "id": 20,
+    "title": "Green Hoodie",
+    "description": "Elegant green hoodie",
+    "image": "images/products/hoodie-green.jpg"
+  }
+ 
+]

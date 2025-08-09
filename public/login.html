@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .login-form { max-width: 300px; margin: 50px auto; padding: 20px; border: 1px solid #ccc; border-radius: 5px; }
+        .login-form label { display: block; margin-bottom: 5px; }
+        .login-form input[type="text"],
+        .login-form input[type="password"] { width: 100%; padding: 8px; margin-bottom: 10px; }
+        .login-form .checkbox { display: flex; align-items: center; }
+        .login-form .checkbox label { margin-left: 5px; }
+        .login-form button { width: 100%; padding: 10px; }
+    </style>
+</head>
+<body>
+    <form class="login-form" id="loginForm">
+        <h2>Login</h2>
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" required>
+
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required>
+
+        <div class="checkbox">
+            <input type="checkbox" id="rememberMe" name="rememberMe">
+            <label for="rememberMe">Remember me</label>
+        </div>
+
+        <button type="submit">Login</button>
+    </form>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, rememberMe })
+            });
+
+            if (response.ok) {
+                alert('Login successful!');
+            // Delay slightly so alert can show before redirect
+                setTimeout(() => {
+                    window.location.href = '/store.html';
+                }, 100);
+            } else {
+                const result = await response.json().catch(() => ({}));
+                alert(result.message || 'Login failed. Please check your credentials.');
+            }
+        });
+    </script>
+</body>
+</html>
