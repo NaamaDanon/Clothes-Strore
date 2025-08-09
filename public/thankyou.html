@@ -1,0 +1,27 @@
+<!-- public/thankyou.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Thank You</title>
+  <style>
+    body { font-family: Arial, sans-serif; display:flex; align-items:center; justify-content:center; height:100vh; background:#f2f2f2; }
+    .box { background:#fff; padding:24px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,.1); text-align:center; }
+    .box h1 { margin-top:0; }
+    .box a { display:inline-block; margin-top:12px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>Payment Successful</h1>
+    <p id="msg"></p>
+    <a href="/store.html">Back to Store</a>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const orderId = params.get('orderId');
+    document.getElementById('msg').textContent = orderId ? `Your order ID is ${orderId}.` : '';
+  </script>
+</body>
+</html>

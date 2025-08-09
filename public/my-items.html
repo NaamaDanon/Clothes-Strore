@@ -1,0 +1,130 @@
+<!-- public/my-items.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Items</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f2f2f2; }
+    h1 { margin-top: 0; }
+    .topnav { margin-bottom: 16px; }
+    .topnav a { margin-right: 10px; }
+    .order { background:#fff; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,.1); padding:14px; margin-bottom: 14px; }
+    .order-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .items { display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+    .item { border:1px solid #eee; border-radius:8px; padding:10px; background:#fafafa; }
+    .item h4 { margin:0 0 6px; font-size:15px; }
+    .muted { color:#666; font-size: 14px; }
+    .empty { padding: 20px; background:#fff; border-radius:10px; text-align:center; }
+    .item { display:flex; gap:10px; align-items:center; }
+    .thumb { width:56px; height:56px; border-radius:6px; overflow:hidden; background:#eee; }
+    .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+  </style>
+</head>
+<body>
+
+
+  <h1>My Items</h1>
+  <div id="root"></div>
+
+  <script>
+    async function ensureLoggedIn() {
+      const r = await fetch('/api/check-login');
+      const { loggedIn } = await r.json();
+      if (!loggedIn) {
+        window.location.href = '/login.html';
+        throw new Error('Not logged in');
+      }
+    }
+
+    function money(n) {
+    return typeof n === 'number' ? `$${n.toFixed(2)}` : '';
+    }
+    function when(iso) {
+      try { return new Date(iso).toLocaleString(); } catch { return iso || ''; }
+    }
+
+    async function loadMyItems() {
+      const res = await fetch('/api/my-items');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load items');
+      return data.orders || [];
+    }
+
+    async function loadProducts() {
+        const res = await fetch('/products.json');
+        const data = await res.json().catch(() => []);
+        return Array.isArray(data) ? data : [];
+    }
+
+    function render(orders, prodMap) {
+    const root = document.getElementById('root');
+    root.innerHTML = '';
+
+    if (!orders.length) {
+        const div = document.createElement('div');
+        div.className = 'empty';
+        div.innerHTML = `You haven't purchased anything yet. <a href="/store.html">Go to store</a>`;
+        root.appendChild(div);
+        return;
+    }
+
+    // newest first
+    orders.slice().reverse().forEach(order => {
+        const box = document.createElement('div');
+        box.className = 'order';
+
+        const header = document.createElement('div');
+        header.className = 'order-header';
+        const totalRounded = typeof order.total === 'number' ? money(order.total) : '';
+        header.innerHTML = `
+        <div><strong>Order:</strong> ${order.orderId || ''}</div>
+        <div class="muted">${(order.at ? new Date(order.at).toLocaleString() : '')}</div>
+        <div><strong>Total:</strong> ${totalRounded}</div>
+        `;
+        box.appendChild(header);
+
+        const grid = document.createElement('div');
+        grid.className = 'items';
+
+        (order.items || []).forEach(it => {
+        const p = prodMap.get(String(it.id));      // enrich with product data
+        const img = p?.image || '';
+        const price = typeof it.price === 'number' ? it.price
+                    : (typeof p?.price === 'number' ? p.price : undefined);
+
+        const card = document.createElement('div');
+        card.className = 'item';
+        card.innerHTML = `
+            <div class="thumb">
+            ${img ? `<img src="${img}" alt="${it.title || ''}">` : ''}
+            </div>
+            <div>
+            <h4 style="margin:0 0 6px">${it.title || p?.title || ''}</h4>
+            <div class="muted">${price != null ? money(price) : ''}</div>
+            </div>
+        `;
+        grid.appendChild(card);
+        });
+
+        box.appendChild(grid);
+        root.appendChild(box);
+    });
+    }
+
+
+  (async () => {
+    await ensureLoggedIn();
+    const [orders, products] = await Promise.all([loadMyItems(), loadProducts()]);
+    const prodMap = new Map(products.map(p => [String(p.id), p]));
+    render(orders, prodMap);
+    })().catch(err => {
+    console.error(err);
+    alert('Failed to load My Items');
+  });
+
+  </script>
+  <script src="/nav.js"></script>
+  <script>renderNav('My Items');</script>
+</body>
+</html>

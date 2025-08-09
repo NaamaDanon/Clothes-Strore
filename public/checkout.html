@@ -1,0 +1,161 @@
+<!-- public/checkout.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Checkout</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f2f2f2; }
+    h1 { margin-top: 0; }
+    .topnav { margin-bottom: 16px; }
+    .topnav a { margin-right: 10px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px,1fr)); gap: 16px; }
+    .card { background:#fff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,.1); padding:12px; display:flex; gap:12px; align-items:center; }
+    .card img { width:96px; height:96px; object-fit:cover; border-radius:6px; }
+    .meta { flex:1; }
+    .meta h3 { margin:0 0 6px; font-size:16px; }
+    .meta p { margin:2px 0; color:#555; font-size:14px; }
+    .summary { margin: 16px 0; font-weight: bold; }
+    .pay { background:#0d6efd; color:#fff; border:none; border-radius:6px; padding:10px 14px; cursor:pointer; }
+    .pay:hover { background:#0b5ed7; }
+    .form { background:#fff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,.1); padding:16px; margin-top: 16px; max-width: 420px; }
+    .row { margin-bottom: 10px; }
+    label { display:block; margin-bottom:4px; font-weight:600; }
+    input[type="text"] { width:100%; padding:8px; }
+  </style>
+</head>
+<body>
+
+
+  <h1>Checkout</h1>
+  <div id="summary" class="summary"></div>
+  <div id="items" class="grid"></div>
+
+  <div class="form">
+    <h3>Payment details</h3>
+    <div class="row">
+      <label for="payName">Name on card</label>
+      <input id="payName" type="text" />
+    </div>
+    <div class="row">
+      <label for="payCard">Card number</label>
+      <input id="payCard" type="text" placeholder="**** **** **** ****" />
+    </div>
+    <div class="row" style="display:flex; gap:8px;">
+      <div style="flex:1">
+        <label for="payExp">Expiry (MM/YY)</label>
+        <input id="payExp" type="text" placeholder="MM/YY" />
+      </div>
+      <div style="flex:1">
+        <label for="payCvv">CVV</label>
+        <input id="payCvv" type="text" placeholder="***" />
+      </div>
+    </div>
+    <button id="btnPay" class="pay">Pay</button>
+  </div>
+
+  <script>
+    function money(n) { return n != null ? `$${n}` : ''; }
+
+    async function ensureLoggedIn() {
+      const r = await fetch('/api/check-login');
+      const { loggedIn } = await r.json();
+      if (!loggedIn) {
+        window.location.href = '/login.html';
+        throw new Error('Not logged in');
+      }
+    }
+
+    async function loadCheckout() {
+      const res = await fetch('/api/checkout');
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load checkout');
+      return data;
+    }
+
+    function renderItems(items) {
+      const cont = document.getElementById('items');
+      cont.innerHTML = '';
+      items.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <input type="checkbox" class="sel" data-id="${p.id}" checked />
+          <img src="${p.image}" alt="${p.title}">
+          <div class="meta">
+            <h3>${p.title}</h3>
+            <p>${p.description || ''}</p>
+            <p><strong>${money(p.price)}</strong></p>
+          </div>
+        `;
+        cont.appendChild(card);
+      });
+    }
+
+    function selectedIds() {
+      return Array.from(document.querySelectorAll('.sel'))
+        .filter(cb => cb.checked)
+        .map(cb => cb.getAttribute('data-id'));
+    }
+
+    async function updateSummary(items) {
+      const sel = selectedIds();
+      const total = items
+        .filter(p => sel.includes(String(p.id)))
+        .reduce((s, p) => s + (p.price || 0), 0);
+      const summary = document.getElementById('summary');
+      summary.textContent = `Selected: ${sel.length} · Total: ${money(total)}`;
+    }
+
+    async function main() {
+      await ensureLoggedIn();
+      const data = await loadCheckout();
+      if (!data.items.length) {
+        document.getElementById('summary').textContent = 'Your cart is empty.';
+        return;
+      }
+      renderItems(data.items);
+      updateSummary(data.items);
+
+      document.getElementById('items').addEventListener('change', (e) => {
+        if (e.target.classList.contains('sel')) updateSummary(data.items);
+      });
+
+      document.getElementById('btnPay').addEventListener('click', async () => {
+        const itemsSel = selectedIds();
+        if (!itemsSel.length) {
+          alert('Please select at least one item to pay for.');
+          return;
+        }
+        const payload = {
+          items: itemsSel,
+          payment: {
+            name: document.getElementById('payName').value.trim(),
+            card: document.getElementById('payCard').value.trim(),
+            exp:  document.getElementById('payExp').value.trim(),
+            cvv:  document.getElementById('payCvv').value.trim()
+          }
+        };
+        const res = await fetch('/api/checkout/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const out = await res.json().catch(() => ({}));
+        if (!res.ok || !out.ok) {
+          alert(out.error || 'Payment failed');
+          return;
+        }
+        window.location.href = `/thankyou.html?orderId=${encodeURIComponent(out.orderId)}`;
+      });
+    }
+
+    main().catch(err => {
+      console.error(err);
+      alert('Failed to load checkout');
+    });
+  </script>
+  <script src="/nav.js"></script>
+<script>renderNav('Checkout');</script>
+</body>
+</html>

@@ -8,5 +8,15 @@
     "password": "chen",
     "cart": [],
     "purchases": []
+  },
+  "naama": {
+    "password": "naama",
+    "cart": [],
+    "purchases": []
+  },
+  "ohad": {
+    "password": "ohadoi",
+    "cart": [],
+    "purchases": []
   }
 }

@@ -56,5 +56,34 @@
             }
         });
     </script>
+    <!-- <script>
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const username   = document.getElementById('username').value;
+        const password   = document.getElementById('password').value;
+        const rememberMe = document.getElementById('rememberMe').checked;
+
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            // IMPORTANT: the server expects "remember"
+            body: JSON.stringify({ username, password, remember: rememberMe })
+        });
+
+        let data = {};
+        try { data = await res.json(); } catch (_) {}
+
+        if (res.ok && data.ok) {
+            alert('Login successful!');
+            // let the Set-Cookie apply, then go to store
+            setTimeout(() => { window.location.href = '/store.html'; }, 100);
+        } else {
+            alert((data && data.error) || 'Login failed. Please check your credentials.');
+        }
+        });
+</script> -->
+<script src="/nav.js"></script>
+<script>renderNav('Login');</script>
+
 </body>
 </html>

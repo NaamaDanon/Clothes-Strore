@@ -62,6 +62,7 @@
   </style>
 </head>
 <body>
+  <div id="topnav"></div>
   <input type="text" id="searchInput" placeholder="Search products..." />
   <div class="product-grid" id="productList"></div>
 
@@ -71,6 +72,7 @@
       const products = await res.json();
       return products;
     }
+
 
     function renderProducts(products) {
       const container = document.getElementById('productList');
@@ -83,24 +85,62 @@
           <img src="${product.image}" alt="${product.title}" />
           <h3>${product.title}</h3>
           <p>${product.description}</p>
-          <button class="add-to-cart" onclick="handleAddToCart('${product.id}')">Add to Cart</button>
+          <p><strong>${product.price != null ? `$${product.price}` : ''}</strong></p>
+
+          <label style="display:block;margin-top:8px;font-size:13px;color:#444;">Size</label>
+          <select id="size-${product.id}" class="size-select" style="width:100%;padding:6px;">
+            <option value="">-- Select size --</option>
+            <option value="XS">XS</option>
+            <option value="S">S</option>
+            <option value="M">M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+          </select>
+
+          <button class="add-to-cart" onclick="handleAddToCart('${product.id}', '${product.title}')">
+            Add to Cart
+          </button>
         `;
         container.appendChild(div);
       });
     }
 
-    async function handleAddToCart(productId) {
-      const res = await fetch('/api/check-login');
-      const { loggedIn } = await res.json();
+    async function handleAddToCart(productId, productTitle) {
+  // 1) login check
+    const res = await fetch('/api/check-login');
+    const { loggedIn } = await res.json();
 
-      if (!loggedIn) {
-        alert('You must be logged in to add to cart');
-        window.location.href = '/login.html';
-      } else {
-        alert(`Product ${productId} added to cart (demo)`);
-        // TODO: Send to backend
-      }
+    if (!loggedIn) {
+      alert('You must be logged in to add to cart');
+      window.location.href = '/login.html';
+      return;
     }
+
+  // 2) require a size
+    const select = document.getElementById(`size-${productId}`);
+    const size = select ? select.value : '';
+    if (!size) {
+      alert('Please choose a size before adding to cart.');
+      if (select) select.focus();
+      return;
+    }
+
+    // 3) add to cart with size
+    const addRes = await fetch('/api/cart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId, size })
+    });
+
+    const data = await addRes.json().catch(() => ({}));
+    if (!addRes.ok || !data.ok) {
+      alert(data.error || 'Failed to add to cart');
+      return;
+    }
+
+    alert(`${productTitle} (${size}) added to cart`);
+  }
+
 
     document.getElementById('searchInput').addEventListener('input', async function() {
       const term = this.value.toLowerCase();
@@ -114,5 +154,7 @@
 
     loadProducts().then(renderProducts);
   </script>
+  <script src="/nav.js"></script>
+  <script>renderNav('Store');</script>
 </body>
 </html>

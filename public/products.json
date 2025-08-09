@@ -3,121 +3,140 @@
     "id": 1,
     "title": "Black T-Shirt",
     "description": "Basic black T-shirt",
-    "image": "images/products/tshirt-black.jpg"
+    "image": "images/products/tshirt-black.jpg",
+    "price": 15
   },
   {
     "id": 2,
     "title": "White T-Shirt",
     "description": "Basic white T-shirt",
-    "image": "images/products/tshirt-white.jpg"
+    "image": "images/products/tshirt-white.jpg",
+    "price": 15
   },
   {
     "id": 3,
     "title": "Red T-Shirt",
     "description": "Basic red T-shirt",
-    "image": "images/products/tshirt-red.jpg"
+    "image": "images/products/tshirt-red.jpg",
+    "price": 15
   },
   {
     "id": 4,
     "title": "Blue T-Shirt",
     "description": "Basic blue T-shirt",
-    "image": "images/products/tshirt-blue.jpg"
+    "image": "images/products/tshirt-blue.jpg",
+    "price": 15
   },
   {
     "id": 5,
     "title": "Green T-Shirt",
     "description": "Basic green T-shirt",
-    "image": "images/products/tshirt-green.jpg"
+    "image": "images/products/tshirt-green.jpg",
+    "price": 15
   },
-   {
+  {
     "id": 6,
     "title": "Black Tank Top",
     "description": "Black sleeveless tank",
-    "image": "images/products/tank-black.jpg"
+    "image": "images/products/tank-black.jpg",
+    "price": 12.99
   },
   {
     "id": 7,
     "title": "White Tank Top",
     "description": "White sleeveless tank",
-    "image": "images/products/tank-white.jpg"
+    "image": "images/products/tank-white.jpg",
+    "price": 12.99
   },
   {
     "id": 8,
     "title": "Red Tank Top",
     "description": "Red sleeveless tank",
-    "image": "images/products/tank-red.jpg"
+    "image": "images/products/tank-red.jpg",
+    "price": 12.99
   },
   {
     "id": 9,
     "title": "Blue Tank Top",
     "description": "Blue sleeveless tank",
-    "image": "images/products/tank-blue.jpg"
+    "image": "images/products/tank-blue.jpg",
+    "price": 12.99
   },
   {
     "id": 10,
     "title": "Green Tank Top",
     "description": "Green sleeveless tank",
-    "image": "images/products/tank-green.jpg"
+    "image": "images/products/tank-green.jpg",
+    "price": 12.99
   },
   {
     "id": 11,
     "title": "Black Sweater",
     "description": "Cozy black sweater",
-    "image": "images/products/sweater-black.jpg"
+    "image": "images/products/sweater-black.jpg",
+    "price": 29.99
   },
   {
     "id": 12,
     "title": "White Sweater",
     "description": "Cozy white sweater",
-    "image": "images/products/sweater-white.jpg"
+    "image": "images/products/sweater-white.jpg",
+    "price": 29.99
   },
   {
     "id": 13,
     "title": "Red Sweater",
     "description": "Cozy red sweater",
-    "image": "images/products/sweater-red.jpg"
+    "image": "images/products/sweater-red.jpg",
+    "price": 29.99
   },
   {
     "id": 14,
     "title": "Blue Sweater",
     "description": "Cozy blue sweater",
-    "image": "images/products/sweater-blue.jpg"
+    "image": "images/products/sweater-blue.jpg",
+    "price": 29.99
   },
   {
     "id": 15,
     "title": "Green Sweater",
     "description": "Cozy green sweater",
-    "image": "images/products/sweater-green.jpg"
+    "image": "images/products/sweater-green.jpg",
+    "price": 29.99
   },
   {
     "id": 16,
     "title": "Black Hoodie",
-    "description": "Elegant black hoodie", 
-    "image": "images/products/hoodie-black.jpg"
+    "description": "Elegant black hoodie",
+    "image": "images/products/hoodie-black.jpg",
+    "price": 39.99
   },
   {
     "id": 17,
     "title": "White Hoodie",
     "description": "Elegant white hoodie",
-    "image": "images/products/hoodie-white.jpg"
+    "image": "images/products/hoodie-white.jpg",
+    "price": 39.99
   },
   {
     "id": 18,
     "title": "Red Hoodie",
     "description": "Elegant red hoodie",
-    "image": "images/products/hoodie-red.jpg"
+    "image": "images/products/hoodie-red.jpg",
+    "price": 39.99
   },
   {
     "id": 19,
     "title": "Blue Hoodie",
     "description": "Elegant blue hoodie",
-    "image": "images/products/hoodie-blue.jpg"
+    "image": "images/products/hoodie-blue.jpg",
+    "price": 39.99
   },
   {
     "id": 20,
     "title": "Green Hoodie",
     "description": "Elegant green hoodie",
-    "image": "images/products/hoodie-green.jpg"
+    "image": "images/products/hoodie-green.jpg",
+    "price": 39.99
   }
- 
 ]

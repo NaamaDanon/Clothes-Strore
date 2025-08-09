@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background:#f2f2f2; }
+    h1 { margin-top: 0; }
+    .card { background:#fff; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,.08); padding:14px; margin-bottom:16px; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { padding:8px; border-bottom:1px solid #eee; text-align:left; }
+    tr:hover td { background:#fafafa; }
+    .row { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+    input[type="text"], input[type="number"] { padding:8px; width:100%; }
+    .btn { padding:8px 12px; border:none; border-radius:6px; cursor:pointer; }
+    .primary { background:#0d6efd; color:#fff; }
+    .danger { background:#dc3545; color:#fff; }
+    .muted { color:#666; }
+    .thumb { width:48px; height:48px; border-radius:6px; overflow:hidden; background:#eee; }
+    .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(320px,1fr)); gap:10px; }
+  </style>
+</head>
+<body>
+  <div id="topnav"></div>
+  <h1>Admin</h1>
+
+  <div class="card">
+    <h2>Activity</h2>
+    <div class="row">
+      <input id="filter" type="text" placeholder="Filter by username prefix (e.g., 'abc')" />
+      <button id="btnReload" class="btn">Reload</button>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Date/Time</th><th>Username</th><th>Type</th></tr>
+      </thead>
+      <tbody id="activityBody"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Manage Products</h2>
+    <div class="row" style="flex-wrap:wrap">
+      <input id="title" type="text" placeholder="Title" style="flex:1; min-width:200px">
+      <input id="description" type="text" placeholder="Description" style="flex:2; min-width:240px">
+      <input id="price" type="number" step="0.01" placeholder="Price (optional)" style="width:160px">
+    </div>
+    <div class="row" style="flex-wrap:wrap">
+      <input id="imageUrl" type="text" placeholder="Image URL (or use file below)" style="flex:2; min-width:300px">
+      <input id="imageFile" type="file" accept="image/*">
+      <button id="btnAdd" class="btn primary">Add Product</button>
+    </div>
+
+    <h3>Products</h3>
+    <div id="prodList" class="grid"></div>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script>renderNav('Admin');</script>
+  <script>
+    async function ensureAdmin() {
+      const r = await fetch('/api/check-login');
+      const { loggedIn } = await r.json();
+      if (!loggedIn) location.href = '/login.html';
+      // Minimal: only allow user "admin"
+      const who = await fetch('/api/whoami').then(r => r.json()).catch(() => ({}));
+      if (who.username !== 'admin') location.href = '/store.html';
+    }
+
+    function fmt(t){ try { return new Date(t).toLocaleString(); } catch { return t || ''; } }
+
+    async function loadActivity(prefix='') {
+      const url = '/api/admin/activity' + (prefix ? ('?prefix=' + encodeURIComponent(prefix)) : '');
+      const r = await fetch(url);
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || 'Failed to load activity');
+      return j.rows || [];
+    }
+    function renderActivity(rows) {
+      const tb = document.getElementById('activityBody');
+      tb.innerHTML = '';
+      rows.slice().reverse().forEach(r => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${fmt(r.at)}</td><td>${r.username||''}</td><td>${r.type||''}</td>`;
+        tb.appendChild(tr);
+      });
+    }
+
+    async function loadProducts() {
+      const r = await fetch('/api/admin/products');
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || 'Failed to load products');
+      return j.products || [];
+    }
+    function money(n){ return typeof n==='number' ? `$${n.toFixed(2)}` : ''; }
+    function renderProducts(list) {
+      const cont = document.getElementById('prodList');
+      cont.innerHTML='';
+      list.forEach(p => {
+        const div = document.createElement('div');
+        div.className='card';
+        div.innerHTML = `
+          <div class="row">
+            <div class="thumb">${p.image ? `<img src="${p.image}" alt="${p.title}">` : ''}</div>
+            <div style="flex:1">
+              <div><strong>${p.title}</strong> <span class="muted">${money(p.price)}</span></div>
+              <div class="muted">${p.description||''}</div>
+            </div>
+            <button class="btn danger" data-id="${p.id}">Remove</button>
+          </div>`;
+        cont.appendChild(div);
+      });
+
+      cont.querySelectorAll('.danger').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const id = btn.getAttribute('data-id');
+          if (!confirm('Remove product #' + id + '?')) return;
+          const r = await fetch('/api/admin/products/'+encodeURIComponent(id), { method:'DELETE' });
+          const j = await r.json().catch(()=>({}));
+          if (!r.ok || !j.ok) { alert(j.error||'Delete failed'); return; }
+          await refreshProducts();
+        });
+      });
+    }
+
+    async function refreshActivity(){
+      const prefix = document.getElementById('filter').value.trim();
+      const rows = await loadActivity(prefix);
+      renderActivity(rows);
+    }
+    async function refreshProducts(){
+      const list = await loadProducts();
+      renderProducts(list);
+    }
+
+    async function addProduct(){
+      const title = document.getElementById('title').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const price = document.getElementById('price').value.trim();
+      const imageUrl = document.getElementById('imageUrl').value.trim();
+      const file = document.getElementById('imageFile').files[0];
+
+      if (!title) { alert('Title required'); return; }
+      if (!imageUrl && !file) { alert('Provide image URL or file'); return; }
+
+      let res, data;
+      if (file) {
+        const fd = new FormData();
+        fd.append('title', title);
+        fd.append('description', description);
+        if (price !== '') fd.append('price', price);
+        fd.append('image', file);
+        res = await fetch('/api/admin/products', { method:'POST', body: fd });
+      } else {
+        res = await fetch('/api/admin/products', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({ title, description, price, imageUrl })
+        });
+      }
+      data = await res.json().catch(()=>({}));
+      if (!res.ok || !data.ok) { alert(data.error||'Add failed'); return; }
+
+      // clear inputs
+      document.getElementById('title').value='';
+      document.getElementById('description').value='';
+      document.getElementById('price').value='';
+      document.getElementById('imageUrl').value='';
+      document.getElementById('imageFile').value='';
+      await refreshProducts();
+    }
+
+    (async function(){
+      await ensureAdmin();
+      document.getElementById('btnReload').addEventListener('click', refreshActivity);
+      document.getElementById('filter').addEventListener('input', ()=>{ refreshActivity(); });
+      document.getElementById('btnAdd').addEventListener('click', addProduct);
+      await refreshActivity();
+      await refreshProducts();
+    })();
+  </script>
+</body>
+</html>

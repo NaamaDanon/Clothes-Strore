@@ -19,6 +19,7 @@
   "homepage": "https://github.com/NaamaDanon/Clothes-Strore#readme",
   "dependencies": {
     "cookie-parser": "^1.4.7",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "multer": "^2.0.2"
   }
 }
