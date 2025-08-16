@@ -4,61 +4,19 @@
   <meta charset="UTF-8" />
   <title>Store</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f2f2f2;
-    }
-
-    #searchInput {
-      width: 300px;
-      padding: 10px;
-      margin-bottom: 20px;
-    }
-
-    .product-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 20px;
-    }
-
-    .product {
-      background: white;
-      border-radius: 8px;
-      padding: 16px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-
-    .product img {
-      width: 100%;
-      height: 200px;
-      object-fit: cover;
-      border-radius: 6px;
-    }
-
-    .product h3 {
-      margin: 10px 0 5px;
-    }
-
-    .product p {
-      font-size: 14px;
-      color: #555;
-    }
-
-    .add-to-cart {
-      margin-top: 10px;
-      padding: 8px 12px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    .add-to-cart:hover {
-      background: #0056b3;
-    }
+    body{font-family:Arial,sans-serif;padding:20px;background:#f2f2f2}
+    #searchInput{width:300px;padding:10px;margin-bottom:20px}
+    .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px}
+    .product{background:#fff;border-radius:8px;padding:16px;box-shadow:0 2px 5px rgba(0,0,0,.1);text-align:center}
+    .product img{width:100%;height:200px;object-fit:cover;border-radius:6px}
+    .product h3{margin:10px 0 5px}
+    .product p{font-size:14px;color:#555}
+    .actions{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:10px}
+    .add-to-cart{padding:8px 12px;background:#007bff;color:#fff;border:none;border-radius:4px;cursor:pointer}
+    .add-to-cart:hover{background:#0056b3}
+    .wish{background:#fff;border:1px solid #ddd;border-radius:50%;width:36px;height:36px;line-height:34px;text-align:center;cursor:pointer;font-size:16px}
+    .wish.active{background:#ff3b30;color:#fff;border-color:#ff3b30}
+    .size-select{width:100%;padding:6px}
   </style>
 </head>
 <body>
@@ -67,13 +25,13 @@
   <div class="product-grid" id="productList"></div>
 
   <script>
+    // ------- data -------
     async function loadProducts() {
-      const res = await fetch('products.json');
-      const products = await res.json();
-      return products;
+      const res = await fetch('/products.json');
+      return await res.json();
     }
 
-
+    // ------- rendering -------
     function renderProducts(products) {
       const container = document.getElementById('productList');
       container.innerHTML = '';
@@ -81,14 +39,15 @@
       products.forEach(product => {
         const div = document.createElement('div');
         div.className = 'product';
+        const imgSrc = product.image ? (product.image.startsWith('http') ? product.image : `/${product.image}`) : '';
         div.innerHTML = `
-          <img src="${product.image}" alt="${product.title}" />
+          <img src="${imgSrc}" alt="${product.title}" />
           <h3>${product.title}</h3>
-          <p>${product.description}</p>
+          <p>${product.description || ''}</p>
           <p><strong>${product.price != null ? `$${product.price}` : ''}</strong></p>
 
           <label style="display:block;margin-top:8px;font-size:13px;color:#444;">Size</label>
-          <select id="size-${product.id}" class="size-select" style="width:100%;padding:6px;">
+          <select id="size-${product.id}" class="size-select">
             <option value="">-- Select size --</option>
             <option value="XS">XS</option>
             <option value="S">S</option>
@@ -97,63 +56,102 @@
             <option value="XL">XL</option>
           </select>
 
-          <button class="add-to-cart" onclick="handleAddToCart('${product.id}', '${product.title}')">
-            Add to Cart
-          </button>
+          <div class="actions">
+            <button class="wish" onclick="toggleWish('${product.id}', this)" title="Add to wishlist">♥</button>
+            <button class="add-to-cart" onclick="handleAddToCart('${product.id}', '${product.title.replace(/'/g, "\\'")}')">Add to Cart</button>
+            <button class="add-to-cart" style="background:#6c5ce7" onclick="handleAddPrint('${product.id}')">Add Print</button>
+          </div>
         `;
         container.appendChild(div);
       });
     }
 
+    // ------- shared guard -------
+    async function getCheckedSizeOrRedirect(productId) {
+      // login check
+      const res = await fetch('/api/check-login');
+      const { loggedIn } = await res.json();
+      if (!loggedIn) {
+        alert('You must be logged in to add to cart');
+        location.href = '/login.html';
+        throw new Error('not logged in');
+      }
+      // size check
+      const select = document.getElementById(`size-${productId}`);
+      const size = select ? select.value : '';
+      if (!size) {
+        alert('Please choose a size before continuing.');
+        select && select.focus();
+        throw new Error('size missing');
+      }
+      return size;
+    }
+
+    // ------- actions -------
     async function handleAddToCart(productId, productTitle) {
-  // 1) login check
-    const res = await fetch('/api/check-login');
-    const { loggedIn } = await res.json();
+      let size;
+      try { size = await getCheckedSizeOrRedirect(productId); } catch { return; }
 
-    if (!loggedIn) {
-      alert('You must be logged in to add to cart');
-      window.location.href = '/login.html';
-      return;
+      const addRes = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, size })
+      });
+      const data = await addRes.json().catch(() => ({}));
+      if (!addRes.ok || !data.ok) {
+        alert(data.error || 'Failed to add to cart');
+        return;
+      }
+      alert(`${productTitle} (${size}) added to cart`);
     }
 
-  // 2) require a size
-    const select = document.getElementById(`size-${productId}`);
-    const size = select ? select.value : '';
-    if (!size) {
-      alert('Please choose a size before adding to cart.');
-      if (select) select.focus();
-      return;
+    async function handleAddPrint(productId) {
+      try {
+        const size = await getCheckedSizeOrRedirect(productId);
+        location.href = `/customize.html?product=${encodeURIComponent(productId)}&size=${encodeURIComponent(size)}`;
+      } catch {
+        // blocked by guard
+      }
     }
 
-    // 3) add to cart with size
-    const addRes = await fetch('/api/cart', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ productId, size })
-    });
+    // expose for inline onclick
+    window.handleAddToCart = handleAddToCart;
+    window.handleAddPrint = handleAddPrint;
 
-    const data = await addRes.json().catch(() => ({}));
-    if (!addRes.ok || !data.ok) {
-      alert(data.error || 'Failed to add to cart');
-      return;
-    }
-
-    alert(`${productTitle} (${size}) added to cart`);
-  }
-
-
+    // ------- search -------
     document.getElementById('searchInput').addEventListener('input', async function() {
       const term = this.value.toLowerCase();
       const products = await loadProducts();
-      const filtered = products.filter(p => 
-        p.title.toLowerCase().startsWith(term) || 
-        p.description.toLowerCase().startsWith(term)
+      const filtered = products.filter(p =>
+        (p.title || '').toLowerCase().startsWith(term) ||
+        (p.description || '').toLowerCase().startsWith(term)
       );
       renderProducts(filtered);
     });
 
+    // initial load
     loadProducts().then(renderProducts);
   </script>
+
+  <script>
+    async function toggleWish(productId, btn) {
+      const check = await fetch('/api/check-login').then(r=>r.json()).catch(()=>({}));
+      if (!check.loggedIn) { alert('Please log in to use wishlist'); location.href='/login.html'; return; }
+
+      // naive toggle: try to add, if conflict then remove
+      const add = await fetch('/api/wishlist', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ productId })
+      });
+      if (add.ok) { btn.classList.add('active'); btn.title='In wishlist'; return; }
+
+      await fetch(`/api/wishlist/${productId}`, { method:'DELETE' });
+      btn.classList.remove('active');
+      btn.title='Add to wishlist';
+    }
+  </script>
+
   <script src="/nav.js"></script>
   <script>renderNav('Store');</script>
 </body>

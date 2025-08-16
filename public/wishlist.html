@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Wishlist</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f2f2f2; }
+    h1 { margin-top: 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+    .card { background:#fff; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,.08); padding:12px; display:flex; gap:12px; align-items:center; }
+    .thumb {
+      width: 96px;
+      height: 96px;
+      flex: 0 0 96px;      /* <-- prevents collapsing in flex */
+      border-radius: 8px;
+      overflow: hidden;
+      background: #eee;
+    }
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .card {
+      position: relative;
+      display: flex;
+      gap: 12px;
+      align-items: center;            
+    }
+    .meta { flex:1; }
+    .meta h3 { margin:0 0 6px; }
+    .muted { color:#666; font-size: 14px; }
+    .row { display:flex; gap:8px; align-items:center; }
+    .btn { padding:8px 12px; border:none; border-radius:6px; cursor:pointer; }
+    .primary { background:#0d6efd; color:#fff; }
+    .danger { background:#dc3545; color:#fff; }
+    select { padding:6px; }
+    .summary { margin: 8px 0 16px; font-weight:600; }
+
+    /* Metadata column grows */
+    .card .meta { flex: 1; }
+
+    /* Row for size + buttons */
+    .card .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap; 
+    }
+
+    /* Make sure the remove button is NOT absolutely positioned */
+    .card .row .remove {
+      position: static !important;
+      left: auto !important;
+      right: auto !important;           /* small spacing */
+    }
+
+/* If you previously had a floating remove button, hide it just in case */
+</style>
+</head>
+<body>
+  <div id="topnav"></div>
+  <h1>Wishlist</h1>
+  <div class="summary" id="summary"></div>
+  <div id="list" class="grid"></div>
+
+  <script src="/nav.js"></script>
+  <script>renderNav('Wishlist');</script>
+  <script>
+    function money(n){ return Number.isFinite(n) ? `$${n.toFixed(2)}` : ''; }
+
+    async function ensureLoggedIn() {
+      const r = await fetch('/api/check-login');
+      const { loggedIn } = await r.json();
+      if (!loggedIn) { location.href = '/login.html'; throw new Error('Not logged in'); }
+    }
+
+    async function loadWishlist() {
+      const r = await fetch('/api/wishlist');
+      const j = await r.json();
+      if (!r.ok || !j.ok) throw new Error(j.error || 'Failed to load wishlist');
+      return j.items || [];
+    }
+    async function loadProducts() {
+      const r = await fetch('/products.json');
+      return await r.json();
+    }
+
+    function render(ids, products) {
+      const map = new Map(products.map(p => [String(p.id), p]));
+      const list = document.getElementById('list');
+      const summary = document.getElementById('summary');
+
+      list.innerHTML = '';
+      if (!ids.length) {
+        summary.textContent = 'Your wishlist is empty.';
+        return;
+      }
+      summary.textContent = `Items: ${ids.length}`;
+
+      ids.forEach(id => {
+        const p = map.get(String(id));
+        if (!p) return;
+
+        // compute image src *after* p is defined
+        const imgSrc = p.image
+          ? (p.image.startsWith('http') ? p.image : `/${p.image}`)
+          : '';
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="thumb">${imgSrc ? `<img src="${imgSrc}" alt="${p.title}">` : ''}</div>
+          <div class="meta">
+            <h3>${p.title}</h3>
+            <div class="muted">${p.description || ''}</div>
+            <div class="muted">${money(p.price)}</div>
+            <div class="row" style="margin-top:8px;">
+              <label>Size</label>
+              <select class="size" data-id="${p.id}">
+                <option value="">-- Select size --</option>
+                <option>XS</option><option>S</option><option>M</option><option>L</option><option>XL</option>
+              </select>
+              <button class="btn primary move" data-id="${p.id}">Move to Cart</button>
+              <button class="btn danger remove" data-id="${p.id}" style="margin-left:auto;">Remove</button>
+            </div>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+
+      // wire remove
+      list.querySelectorAll('.remove').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          const r = await fetch(`/api/wishlist/${id}`, { method:'DELETE' });
+          const j = await r.json().catch(()=>({}));
+          if (!r.ok || !j.ok) { alert(j.error || 'Remove failed'); return; }
+          main(); // reload
+        });
+      });
+
+      // wire move-to-cart
+      list.querySelectorAll('.move').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.getAttribute('data-id');
+          const sel = btn.parentElement.querySelector('.size');
+          const size = sel && sel.value;
+          if (!size) { alert('Please choose a size.'); sel && sel.focus(); return; }
+
+          const r = await fetch('/api/cart', {
+            method: 'POST',
+            headers: { 'Content-Type':'application/json' },
+            body: JSON.stringify({ productId: id, size })
+          });
+          const j = await r.json().catch(()=>({}));
+          if (!r.ok || !j.ok) { alert(j.error || 'Add to cart failed'); return; }
+
+          // remove from wishlist
+          await fetch(`/api/wishlist/${id}`, { method:'DELETE' }).catch(()=>{});
+          alert('Moved to cart');
+          main();
+        });
+      });
+    }
+
+    async function main() {
+      await ensureLoggedIn();
+      const [ids, products] = await Promise.all([loadWishlist(), loadProducts()]);
+      render(ids, products);
+    }
+    main().catch(err => { console.error(err); alert('Failed to load wishlist'); });
+  </script>
+</body>
+</html>

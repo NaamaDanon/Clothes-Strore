@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Customize Print</title>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f2f2f2; margin:0; padding:20px; }
+    h1 { margin: 0 0 10px; }
+    .wrap { max-width: 1000px; margin: 0 auto; }
+    .flex { display:flex; gap:16px; flex-wrap:wrap; }
+    .card { background:#fff; border-radius:12px; padding:14px; box-shadow:0 2px 6px rgba(0,0,0,.07); }
+    .product { display:flex; gap:12px; align-items:center; }
+    .thumb { width:120px; height:120px; border-radius:10px; overflow:hidden; background:#eee; flex:0 0 120px; }
+    .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+    .prints { display:grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap:12px; margin-top:8px; }
+    .print-card { cursor:pointer; border:2px solid transparent; }
+    .print-card.selected { border-color:#0d6efd; }
+    .print-thumb { width:100%; height:120px; background:#fafafa; border-radius:8px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .print-thumb img { max-width:100%; max-height:100%; display:block; }
+    .radio-row { display:flex; gap:12px; align-items:center; margin-top:8px; }
+    .btn { padding:10px 14px; border:none; border-radius:8px; cursor:pointer; }
+    .primary { background:#0d6efd; color:#fff; }
+    .muted { color:#666; }
+    .price { font-weight:700; }
+  </style>
+</head>
+<body>
+  <div id="topnav"></div>
+  <div class="wrap">
+    <h1>Customize Print</h1>
+    <div id="productBox" class="card product"></div>
+
+    <div class="card" style="margin-top:14px;">
+      <h3 style="margin:0 0 6px;">Choose a print</h3>
+      <div id="prints" class="prints"></div>
+
+      <div class="radio-row">
+        <strong>Color:</strong>
+        <label><input type="radio" name="pcolor" value="black" checked> Black</label>
+        <label><input type="radio" name="pcolor" value="white"> White</label>
+        <span class="muted">(+<span class="price">$5.00</span>)</span>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px;">
+        <button id="btnAdd" class="btn primary">Add to Cart with Print (+$5)</button>
+        <button class="btn" onclick="history.back()">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/nav.js"></script>
+  <script>renderNav('');</script>
+  <script>
+    function money(n){ return Number.isFinite(n) ? `$${n.toFixed(2)}` : ''; }
+
+    function getQuery(k){ return new URL(location.href).searchParams.get(k); }
+
+    async function loadProducts(){ const r = await fetch('/products.json'); return await r.json(); }
+
+    function renderProduct(p, size){
+      const box = document.getElementById('productBox');
+      const imgSrc = p.image ? (p.image.startsWith('http') ? p.image : `/${p.image}`) : '';
+      box.innerHTML = `
+        <div class="thumb">${imgSrc ? `<img src="${imgSrc}" alt="${p.title}">` : ''}</div>
+        <div>
+          <h2 style="margin:0">${p.title}</h2>
+          <div class="muted">${p.description || ''}</div>
+          <div class="price" style="margin-top:4px;">${money(p.price)} <span class="muted">+ $5 print</span></div>
+          <div class="muted" style="margin-top:6px;"><strong>Size:</strong> ${size}</div>
+        </div>
+      `;
+    }
+
+    function renderPrintChoices(){
+      const prints = [
+        { key:'star',   title:'Star',   image:'/images/prints/star.jpg' },
+        { key:'heart',  title:'Heart',  image:'/images/prints/heart.jpg' },
+        { key:'flower', title:'Flower', image:'/images/prints/flower.jpg' },
+      ];
+      const cont = document.getElementById('prints');
+      prints.forEach(pr => {
+        const c = document.createElement('div');
+        c.className = 'card print-card';
+        c.dataset.key = pr.key;
+        c.dataset.image = pr.image;
+        c.innerHTML = `
+          <div class="print-thumb"><img src="${pr.image}" alt="${pr.title}"></div>
+          <div style="margin-top:6px; text-align:center;">${pr.title}</div>
+        `;
+        c.addEventListener('click', () => {
+          cont.querySelectorAll('.print-card').forEach(el => el.classList.remove('selected'));
+          c.classList.add('selected');
+          c.setAttribute('aria-selected', 'true');
+        });
+        cont.appendChild(c);
+      });
+    }
+
+    async function main(){
+      const productId = getQuery('product');
+      const size = getQuery('size') || '';
+
+      // Must have product and size (your API requires size)
+      if (!productId || !size){ alert('Missing product or size'); location.href='/store.html'; return; }
+
+      const products = await loadProducts();
+      const p = products.find(x => String(x.id) === String(productId));
+      if (!p){ alert('Product not found'); location.href='/store.html'; return; }
+
+      renderProduct(p, size);
+      renderPrintChoices();
+
+      document.getElementById('btnAdd').addEventListener('click', async () => {
+        // which print?
+        const selected = document.querySelector('.print-card.selected');
+        if (!selected){ alert('Please select a print.'); return; }
+        const color = (document.querySelector('input[name="pcolor"]:checked') || {}).value || 'black';
+
+        const body = {
+          productId,
+          size,
+          print: {
+            type: selected.dataset.key,
+            color,
+            image: selected.dataset.image,
+            extra: 5
+          }
+        };
+
+        const r = await fetch('/api/cart', {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify(body)
+        });
+        const j = await r.json().catch(()=>({}));
+        if (!r.ok || !j.ok){ alert(j.error || 'Failed to add to cart'); return; }
+        alert('Added to cart with print!');
+        location.href = '/cart.html';
+      });
+    }
+
+    main().catch(err => { console.error(err); alert('Failed to load customization page'); });
+  </script>
+</body>
+</html>

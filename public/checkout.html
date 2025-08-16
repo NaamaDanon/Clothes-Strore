@@ -7,11 +7,9 @@
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; background: #f2f2f2; }
     h1 { margin-top: 0; }
-    .topnav { margin-bottom: 16px; }
-    .topnav a { margin-right: 10px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px,1fr)); gap: 16px; }
-    .card { background:#fff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,.1); padding:12px; display:flex; gap:12px; align-items:center; }
-    .card img { width:96px; height:96px; object-fit:cover; border-radius:6px; }
+    .card { background:#fff; border-radius:8px; box-shadow:0 2px 5px rgba(0,0,0,.1); padding:12px; display:flex; gap:12px; align-items:flex-start; }
+    .card img.main { width:96px; height:96px; object-fit:cover; border-radius:6px; }
     .meta { flex:1; }
     .meta h3 { margin:0 0 6px; font-size:16px; }
     .meta p { margin:2px 0; color:#555; font-size:14px; }
@@ -22,15 +20,25 @@
     .row { margin-bottom: 10px; }
     label { display:block; margin-bottom:4px; font-weight:600; }
     input[type="text"] { width:100%; padding:8px; }
+    .print-row { display:flex; align-items:center; gap:8px; margin-top:6px; }
+    .print-row img { width:40px; height:40px; border-radius:6px; object-fit:cover; }
   </style>
 </head>
 <body>
 
-
   <h1>Checkout</h1>
   <div id="summary" class="summary"></div>
   <div id="items" class="grid"></div>
-
+  <div id="deliveryBox" style="background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:12px; margin-bottom:12px;">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <strong>Delivery</strong>
+    <a href="/delivery.html" id="deliveryBtn"
+       style="text-decoration:none; background:#2563eb; color:#fff; padding:6px 10px; border-radius:8px; font-weight:600;">
+       Add / Change
+    </a>
+  </div>
+  <div id="deliverySummary" style="margin-top:8px; color:#374151;">No delivery details yet.</div>
+</div>
   <div class="form">
     <h3>Payment details</h3>
     <div class="row">
@@ -55,80 +63,94 @@
   </div>
 
   <script>
-    function money(n) { return n != null ? `$${n}` : ''; }
+    const money = n => `$${(Number(n)||0).toFixed(2)}`;
 
     async function ensureLoggedIn() {
       const r = await fetch('/api/check-login');
       const { loggedIn } = await r.json();
       if (!loggedIn) {
-        window.location.href = '/login.html';
+        location.href = '/login.html';
         throw new Error('Not logged in');
       }
     }
 
     async function loadCheckout() {
       const res = await fetch('/api/checkout');
-      const data = await res.json();
+      const data = await res.json().catch(()=>({}));
       if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load checkout');
-      return data;
+      return data; // { ok, items: [...] }
+    }
+
+    function normalizeImg(src) {
+      if (!src) return '';
+      return src.startsWith('http') ? src : `/${src}`;
     }
 
     function renderItems(items) {
       const cont = document.getElementById('items');
       cont.innerHTML = '';
-      items.forEach(p => {
+      items.forEach((it, idx) => {
+        const prodImg = normalizeImg(it.image);
+        const printUI = it.print ? `
+          <div class="print-row">
+            ${it.print.image ? `<img src="${it.print.image}" alt="${it.print.type}">` : ''}
+            <div><strong>Print:</strong> ${it.print.type} (${it.print.color}) · +${money(it.print.extra || 5)}</div>
+          </div>
+        ` : '';
+
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
-          <input type="checkbox" class="sel" data-id="${p.id}" checked />
-          <img src="${p.image}" alt="${p.title}">
+          <input type="checkbox" class="sel" data-index="${idx}" checked />
+          ${prodImg ? `<img class="main" src="${prodImg}" alt="${it.title}">` : ''}
           <div class="meta">
-            <h3>${p.title}</h3>
-            <p>${p.description || ''}</p>
-            <p><strong>${money(p.price)}</strong></p>
+            <h3>${it.title}</h3>
+            <p>${it.description || ''}</p>
+            ${it.size ? `<p><strong>Size:</strong> ${it.size}</p>` : ''}
+            ${printUI}
+            <p style="margin-top:6px;"><strong>${money(it.price)}</strong></p>
           </div>
         `;
         cont.appendChild(card);
       });
     }
 
-    function selectedIds() {
-      return Array.from(document.querySelectorAll('.sel'))
+    function selectedIndexes() {
+      return [...document.querySelectorAll('.sel')]
         .filter(cb => cb.checked)
-        .map(cb => cb.getAttribute('data-id'));
+        .map(cb => Number(cb.dataset.index));
     }
 
-    async function updateSummary(items) {
-      const sel = selectedIds();
-      const total = items
-        .filter(p => sel.includes(String(p.id)))
-        .reduce((s, p) => s + (p.price || 0), 0);
-      const summary = document.getElementById('summary');
-      summary.textContent = `Selected: ${sel.length} · Total: ${money(total)}`;
+    function updateSummary(items) {
+      const idxs = selectedIndexes();
+      const total = idxs.reduce((s,i) => s + Number(items[i].price || 0), 0);
+      document.getElementById('summary').textContent =
+        `Selected: ${idxs.length} · Total: ${money(total)}`;
     }
 
     async function main() {
       await ensureLoggedIn();
       const data = await loadCheckout();
-      if (!data.items.length) {
+      if (!data.items || !data.items.length) {
         document.getElementById('summary').textContent = 'Your cart is empty.';
         return;
       }
       renderItems(data.items);
       updateSummary(data.items);
 
-      document.getElementById('items').addEventListener('change', (e) => {
+      document.getElementById('items').addEventListener('change', e => {
         if (e.target.classList.contains('sel')) updateSummary(data.items);
       });
 
       document.getElementById('btnPay').addEventListener('click', async () => {
-        const itemsSel = selectedIds();
-        if (!itemsSel.length) {
-          alert('Please select at least one item to pay for.');
-          return;
-        }
+        const idxs = selectedIndexes();
+        if (!idxs.length) { alert('Please select at least one item to pay for.'); return; }
+
+        // If your server expects ids, map indexes to ids; otherwise send indexes.
+        const ids = idxs.map(i => data.items[i].id);
+
         const payload = {
-          items: itemsSel,
+          items: ids,
           payment: {
             name: document.getElementById('payName').value.trim(),
             card: document.getElementById('payCard').value.trim(),
@@ -136,17 +158,23 @@
             cvv:  document.getElementById('payCvv').value.trim()
           }
         };
+
         const res = await fetch('/api/checkout/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        });
-        const out = await res.json().catch(() => ({}));
-        if (!res.ok || !out.ok) {
-          alert(out.error || 'Payment failed');
-          return;
+        });   
+
+        const out = await res.json().catch(()=>({}));
+        if (!res.ok || !out.ok) { alert(out.error || 'Payment failed'); return; }
+        const orderId = out.orderId || '';
+        const goFeedback = confirm('Payment successful! Would you like to leave feedback now?');
+        if (goFeedback) {
+          location.href = `/feedback.html?orderId=${encodeURIComponent(orderId)}`;
+        } else {
+          // Fallback: your existing success destination
+          location.href = `/thankyou.html?orderId=${encodeURIComponent(orderId)}`;
         }
-        window.location.href = `/thankyou.html?orderId=${encodeURIComponent(out.orderId)}`;
       });
     }
 
@@ -155,7 +183,31 @@
       alert('Failed to load checkout');
     });
   </script>
+  <script>
+  async function loadDeliverySummary() {
+    try {
+      const r = await fetch('/api/checkout/delivery');
+      if (!r.ok) return;
+      const data = await r.json();
+      const d = data.delivery;
+      const box = document.getElementById('deliverySummary');
+      if (!d) {
+        box.textContent = 'No delivery details yet.';
+        return;
+      }
+      box.innerHTML = `
+        ${d.fullName || ''}${d.phone ? ' · ' + d.phone : ''}<br/>
+        ${d.address1 || ''}${d.address2 ? ', ' + d.address2 : ''}<br/>
+        ${d.city || ''}${d.zip ? ' ' + d.zip : ''}${d.country ? ', ' + d.country : ''}
+      `;
+    } catch(e) {
+      console.warn('delivery summary failed', e);
+    }
+  }
+  loadDeliverySummary();
+</script>
+
   <script src="/nav.js"></script>
-<script>renderNav('Checkout');</script>
+  <script>renderNav('Checkout');</script>
 </body>
 </html>

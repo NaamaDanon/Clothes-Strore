@@ -117,5 +117,120 @@
     "at": "2025-08-09T17:22:31.547Z",
     "username": "admin",
     "type": "login"
+  },
+  {
+    "at": "2025-08-16T14:01:16.842Z",
+    "username": "naama",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T14:35:06.617Z",
+    "username": "naama",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T15:52:15.653Z",
+    "username": "naama",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T16:34:18.547Z",
+    "username": "naama",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T16:42:35.898Z",
+    "username": "naama",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T16:43:06.846Z",
+    "username": "naama",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T17:16:25.206Z",
+    "username": "naama",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T17:39:41.570Z",
+    "username": "naama",
+    "type": "logout"
+  },
+  {
+    "at": "2025-08-16T17:39:50.821Z",
+    "username": "admin",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T17:42:29.276Z",
+    "username": "admin",
+    "type": "logout"
+  },
+  {
+    "at": "2025-08-16T17:42:37.245Z",
+    "username": "naama",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T18:09:38.999Z",
+    "username": "naama",
+    "type": "logout"
+  },
+  {
+    "at": "2025-08-16T18:09:45.834Z",
+    "username": "admin",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T18:36:44.426Z",
+    "username": "admin",
+    "type": "logout"
+  },
+  {
+    "at": "2025-08-16T18:36:54.546Z",
+    "username": "naama",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T18:37:37.028Z",
+    "username": "naama",
+    "type": "logout"
+  },
+  {
+    "at": "2025-08-16T18:37:42.994Z",
+    "username": "admin",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T18:46:09.239Z",
+    "username": "admin",
+    "type": "add-to-cart"
+  },
+  {
+    "at": "2025-08-16T18:47:26.800Z",
+    "username": "admin",
+    "type": "logout"
+  },
+  {
+    "at": "2025-08-16T18:59:54.275Z",
+    "username": "naama",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T19:00:40.296Z",
+    "username": "naama",
+    "type": "logout"
+  },
+  {
+    "at": "2025-08-16T19:00:56.015Z",
+    "username": "chen",
+    "type": "login"
+  },
+  {
+    "at": "2025-08-16T19:10:24.943Z",
+    "username": "chen",
+    "type": "add-to-cart"
   }
 ]

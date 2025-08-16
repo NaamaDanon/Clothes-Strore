@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin – Feedback</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+    body { font-family: Arial, sans-serif; padding: 20px; background:#f2f2f2; }
+    h1 { margin-top: 0; }
+    .card { background:#fff; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,.08); padding:14px; margin-bottom:16px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .badge { font-size:12px; padding:2px 6px; border-radius:999px; background:#eef2ff; color:#3730a3; }
+    .badge.warn { background:#fff7ed; color:#9a3412; }
+    .muted { color:#6b7280; font-size:12px; }
+    .msg { white-space:pre-wrap; margin-top:8px; }
+</style>
+</head>
+<body>
+  <div id="topnav"></div>
+  <h1>Admin</h1>
+
+  <!-- One card section for Feedback list, same look-and-feel as Admin sections -->
+  <div class="card">
+    <h2>Feedback</h2>
+    <div id="list"></div>
+  </div>
+
+  <script>
+    async function loadFeedbacks() {
+      const r = await fetch('/api/admin/feedbacks');
+      const data = await r.json();
+      if (!r.ok || !data.ok) throw new Error(data.error || 'Failed');
+      return data.feedbacks || [];
+    }
+
+    function t(s){ try{return new Date(s).toLocaleString()}catch{return s} }
+
+    function render(list) {
+      const root = document.getElementById('list');
+      root.innerHTML = '';
+      if (!list.length) {
+        const empty = document.createElement('div');
+        empty.className = 'muted';
+        empty.textContent = 'No feedback yet.';
+        root.appendChild(empty);
+        return;
+      }
+      // render each feedback as a card (same visual as Admin cards)
+      for (const f of list) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="row">
+            <div><strong>username:</strong> ${f.username || ''}</div>
+            <div class="muted">at ${t(f.at)}</div>
+          </div>
+          <div class="row" style="margin-top:4px">
+            <div class="muted">name: ${f.name || ''}</div>
+            <div class="muted">email: ${f.email || ''}</div>
+          </div>
+          <div class="msg">${(f.message || '').replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))}</div>
+        `;
+        root.appendChild(card);
+      }
+    }
+
+    (async () => {
+      const list = await loadFeedbacks();
+      render(list);
+    })().catch(e => {
+      console.error(e);
+      alert('Failed to load feedbacks (admin only).');
+    });
+  </script>
+
+  <script src="/nav.js"></script>
+  <script>renderNav('Feedback');</script>
+</body>
+</html>

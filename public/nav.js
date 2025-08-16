@@ -30,8 +30,12 @@
       { href: '/cart.html',     label: 'Cart' },
       { href: '/checkout.html', label: 'Checkout' },
       { href: '/my-items.html', label: 'My Items' },
+      { href: '/wishlist.html', label: 'Wishlist' },
     ];
-    if (isAdmin) links.push({ href: '/admin.html', label: 'Admin' }); // show only for admin
+    if (isAdmin) {
+      links.push({ href: '/admin.html', label: 'Admin' });
+      links.push({ href: '/admin-feedback.html', label: 'Feedback' }); // NEW
+    }
 
     const left = links.map(l => navLink(l.href, l.label, l.label === activeLabel)).join('');
 

@@ -9,6 +9,8 @@ const cartRouter = require('./routes/cart-server');
 const checkoutRouter = require('./routes/checkout-server');
 const myItemsRouter = require('./routes/myitems-server');
 const adminRouter = require('./routes/admin-server'); 
+const wishlistRouter = require('./routes/wishlist-server')
+const feedbackRouter = require('./routes/feedback-server');
 
 const app = express();
 const PORT = 3000;
@@ -27,6 +29,9 @@ app.use('/api', cartRouter);
 app.use('/api', checkoutRouter); 
 app.use('/api', myItemsRouter); 
 app.use('/api', adminRouter);
+app.use('/api', wishlistRouter);
+app.use('/api', feedbackRouter);
+
 // Check login status route
 app.get('/api/check-login', (req, res) => {
   try {

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Delivery details</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <style>
+    body { font-family: Arial, sans-serif; background:#f6f7f9; margin:0; }
+    .wrap { max-width: 720px; margin: 30px auto; background:#fff; border-radius:10px; box-shadow:0 2px 6px rgba(0,0,0,.08); padding: 20px 24px; }
+    h1 { margin: 0 0 12px; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .row-1 { grid-template-columns: 1fr; }
+    label { display:block; font-size:14px; margin:12px 0 6px; color:#333; }
+    input, select { width:100%; padding:10px 12px; border:1px solid #d7dbe2; border-radius:8px; font-size:14px; background:#fff; }
+    .actions { margin-top:18px; display:flex; gap:10px; }
+    button { padding:10px 16px; border:0; border-radius:8px; background:#2563eb; color:#fff; font-weight:600; cursor:pointer; }
+    button.secondary { background:#6b7280; }
+    .msg { margin-top:10px; color:#16a34a; display:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Delivery</h1>
+    <p>Fill your delivery details. We’ll save them and send you back to checkout to complete the order.</p>
+
+    <form id="form" class="row-1">
+      <div class="row">
+        <div>
+          <label>Full name</label>
+          <input name="fullName" required />
+        </div>
+        <div>
+          <label>Phone</label>
+          <input name="phone" required />
+        </div>
+      </div>
+
+      <label>Country</label>
+      <input name="country" required />
+
+      <div class="row">
+        <div>
+          <label>City</label>
+          <input name="city" required />
+        </div>
+        <div>
+          <label>ZIP / Postal code</label>
+          <input name="zip" required />
+        </div>
+      </div>
+
+      <label>Address (street & number)</label>
+      <input name="address1" required />
+
+      <label>Additional info (apt, notes) — optional</label>
+      <input name="address2" />
+
+      <div class="actions">
+        <button type="submit">Save & return to Checkout</button>
+        <button type="button" class="secondary" id="cancel">Cancel</button>
+      </div>
+      <div class="msg" id="msg">Saved!</div>
+    </form>
+  </div>
+
+  <script>
+    async function loadExisting() {
+      const r = await fetch('/api/checkout/delivery');
+      if (!r.ok) return;
+      const { delivery } = await r.json();
+      if (!delivery) return;
+      for (const [k,v] of Object.entries(delivery)) {
+        const el = document.querySelector(`[name="${k}"]`);
+        if (el) el.value = v || '';
+      }
+    }
+
+    document.getElementById('cancel').onclick = () => {
+      window.location.href = '/checkout.html';
+    };
+
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.currentTarget);
+      const body = Object.fromEntries(fd.entries());
+      const res = await fetch('/api/checkout/delivery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        alert('Failed to save delivery');
+        return;
+      }
+      // Optional toast
+      document.getElementById('msg').style.display = 'block';
+      // Return to checkout
+      window.location.href = '/checkout.html';
+    });
+
+    loadExisting().catch(console.error);
+  </script>
+<script src="/nav.js"></script>
+<script>renderNav('Delivery');</script>
+</body>
+</html>

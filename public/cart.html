@@ -46,67 +46,79 @@
       return await res.json();
     }
 
-    function money(n) { return Number.isFinite(n) ? `$${n.toFixed(2)}` : ''; }
+  function money(n){ return `$${(Number(n)||0).toFixed(2)}`; }
 
-    async function renderCart() {
-      await ensureLoggedIn();
-      const [products, cartResp] = await Promise.all([loadProducts(), loadCart()]);
-      const listEl = document.getElementById('cartList');
-      const summaryEl = document.getElementById('summary');
-      listEl.innerHTML = '';
+async function renderCart() {
+  await ensureLoggedIn();
 
-      if (!cartResp.ok) {
-        listEl.textContent = cartResp.error || 'Failed to load cart';
-        return;
-      }
+  const [products, cartResp] = await Promise.all([loadProducts(), loadCart()]);
+  const listEl = document.getElementById('cartList');
+  const summaryEl = document.getElementById('summary');
+  listEl.innerHTML = '';
 
-      const idToProduct = new Map(products.map(p => [String(p.id), p]));
-      const items = cartResp.items || [];
+  if (!cartResp.ok) {
+    listEl.textContent = cartResp.error || 'Failed to load cart';
+    return;
+  }
 
-      let total = 0;
-      if (items.length === 0) {
-        summaryEl.textContent = 'Your cart is empty.';
-        return;
-      }
+  const idToProduct = new Map(products.map(p => [String(p.id), p]));
+  const items = cartResp.items || [];
+  if (!items.length) { summaryEl.textContent = 'Your cart is empty.'; return; }
 
-      items.forEach((it) => {
-        const p = idToProduct.get(String(it.id));
-        if (!p) return;
+  let total = 0;
 
-        if (typeof p.price === 'number') total += p.price;
+  items.forEach(it => {
+    const p = idToProduct.get(String(it.id));
+    if (!p) return;
 
-        const row = document.createElement('div');
-        row.className = 'item';
-        row.innerHTML = `
-            <img src="${p.image}" alt="${p.title}">
-            <div class="meta">
-            <h3>${p.title}</h3>
-            <p>${p.description || ''}</p>
-            <p>${it.size ? `<strong>Size:</strong> ${it.size}` : ''}</p>
-            <p><strong>${money(p.price)}</strong></p>
-            </div>
-            <button class="remove" data-id="${p.id}">Remove</button>
-        `;
-        listEl.appendChild(row);
-     });
+    // base price + optional print extra
+    let unit = Number(p.price) || 0;
+    if (it.print) unit += Number(it.print.extra || 5);
+    total += unit;
 
-     summaryEl.textContent = `Items: ${items.length}${Number.isFinite(total) && total > 0 ? ` · Total: ${money(total)}` : ''}`;
+    const prodImg = p.image ? (p.image.startsWith('http') ? p.image : `/${p.image}`) : '';
 
+    const printUI = it.print ? `
+      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+        ${it.print.image ? `<img src="${it.print.image}" alt="${it.print.type}"
+             style="width:44px;height:44px;border-radius:6px;object-fit:cover;">` : ''}
+        <div>
+          <strong>Print:</strong> ${it.print.type} (${it.print.color})
+          · +${money(Number(it.print.extra || 5))}
+        </div>
+      </div>
+    ` : '';
 
-      // Wire remove buttons
-      listEl.querySelectorAll('.remove').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const pid = btn.getAttribute('data-id');
-          const res = await fetch(`/api/cart/${pid}`, { method: 'DELETE' });
-          const data = await res.json().catch(() => ({}));
-          if (!res.ok || !data.ok) {
-            alert(data.error || 'Failed to remove item');
-            return;
-          }
-          await renderCart(); // refresh
-        });
-      });
-    }
+    const row = document.createElement('div');
+    row.className = 'item';
+    row.innerHTML = `
+      ${prodImg ? `<img src="${prodImg}" alt="${p.title}">` : ''}
+      <div class="meta">
+        <h3>${p.title}</h3>
+        <p>${p.description || ''}</p>
+        ${it.size ? `<p><strong>Size:</strong> ${it.size}</p>` : ''}
+        ${printUI}
+        <p style="margin-top:6px;"><strong>${money(unit)}</strong></p>
+      </div>
+      <button class="remove" data-id="${p.id}">Remove</button>
+    `;
+    listEl.appendChild(row);
+  });
+
+  summaryEl.textContent = `Items: ${items.length} · Total: ${money(total)}`;
+
+  // remove
+  listEl.querySelectorAll('.remove').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const pid = btn.getAttribute('data-id');
+      const res = await fetch(`/api/cart/${pid}`, { method: 'DELETE' });
+      const data = await res.json().catch(()=>({}));
+      if (!res.ok || !data.ok) { alert(data.error || 'Failed to remove item'); return; }
+      renderCart();
+    });
+  });
+}
+
 
     renderCart().catch(console.error);
   </script>

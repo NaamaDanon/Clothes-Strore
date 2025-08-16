@@ -28,102 +28,114 @@
   <div id="root"></div>
 
   <script>
-    async function ensureLoggedIn() {
-      const r = await fetch('/api/check-login');
-      const { loggedIn } = await r.json();
-      if (!loggedIn) {
-        window.location.href = '/login.html';
-        throw new Error('Not logged in');
-      }
+  async function ensureLoggedIn() {
+    const r = await fetch('/api/check-login');
+    const { loggedIn } = await r.json();
+    if (!loggedIn) {
+      window.location.href = '/login.html';
+      throw new Error('Not logged in');
     }
+  }
 
-    function money(n) {
-    return typeof n === 'number' ? `$${n.toFixed(2)}` : '';
-    }
-    function when(iso) {
-      try { return new Date(iso).toLocaleString(); } catch { return iso || ''; }
-    }
+  function money(n) {
+    const v = Number(n);
+    return Number.isFinite(v) ? `$${v.toFixed(2)}` : '';
+  }
+  function when(iso) {
+    try { return new Date(iso).toLocaleString(); } catch { return iso || ''; }
+  }
 
-    async function loadMyItems() {
-      const res = await fetch('/api/my-items');
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load items');
-      return data.orders || [];
-    }
+  async function loadMyItems() {
+    const res = await fetch('/api/my-items');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to load items');
+    return data.orders || [];
+  }
 
-    async function loadProducts() {
-        const res = await fetch('/products.json');
-        const data = await res.json().catch(() => []);
-        return Array.isArray(data) ? data : [];
-    }
+  async function loadProducts() {
+    // keep your original path
+    const res = await fetch('/products.json');
+    const data = await res.json().catch(() => []);
+    return Array.isArray(data) ? data : [];
+  }
 
-    function render(orders, prodMap) {
+  function render(orders, prodMap) {
     const root = document.getElementById('root');
     root.innerHTML = '';
 
     if (!orders.length) {
-        const div = document.createElement('div');
-        div.className = 'empty';
-        div.innerHTML = `You haven't purchased anything yet. <a href="/store.html">Go to store</a>`;
-        root.appendChild(div);
-        return;
+      const div = document.createElement('div');
+      div.className = 'empty';
+      div.innerHTML = `You haven't purchased anything yet. <a href="/store.html">Go to store</a>`;
+      root.appendChild(div);
+      return;
     }
 
     // newest first
     orders.slice().reverse().forEach(order => {
-        const box = document.createElement('div');
-        box.className = 'order';
+      const box = document.createElement('div');
+      box.className = 'order';
 
-        const header = document.createElement('div');
-        header.className = 'order-header';
-        const totalRounded = typeof order.total === 'number' ? money(order.total) : '';
-        header.innerHTML = `
+      const header = document.createElement('div');
+      header.className = 'order-header';
+      const totalRounded = Number.isFinite(order.total) ? money(order.total) : '';
+      header.innerHTML = `
         <div><strong>Order:</strong> ${order.orderId || ''}</div>
-        <div class="muted">${(order.at ? new Date(order.at).toLocaleString() : '')}</div>
+        <div class="muted">${order.at ? when(order.at) : ''}</div>
         <div><strong>Total:</strong> ${totalRounded}</div>
-        `;
-        box.appendChild(header);
+      `;
+      box.appendChild(header);
 
-        const grid = document.createElement('div');
-        grid.className = 'items';
+      const grid = document.createElement('div');
+      grid.className = 'items';
 
-        (order.items || []).forEach(it => {
-        const p = prodMap.get(String(it.id));      // enrich with product data
-        const img = p?.image || '';
-        const price = typeof it.price === 'number' ? it.price
-                    : (typeof p?.price === 'number' ? p.price : undefined);
+      (order.items || []).forEach(it => {
+        const p = prodMap.get(String(it.id));        // enrich with product data
+        const prodImg = p?.image || '';
+        const printImg = it?.print?.image || '';     // thumbnail for print if exists
+        const base = Number(it?.price ?? p?.price ?? 0) || 0;
+        const extra = Number(it?.extra ?? 0) || 0;   // surcharge from checkout
+        const qty = Number(it?.qty ?? 1) || 1;
+        const unit = base + extra;
+        const line = unit * qty;
 
         const card = document.createElement('div');
         card.className = 'item';
         card.innerHTML = `
-            <div class="thumb">
-            ${img ? `<img src="${img}" alt="${it.title || ''}">` : ''}
-            </div>
-            <div>
+          <div class="thumb" style="position:relative">
+            ${prodImg ? `<img src="${prodImg}" alt="${it.title || p?.title || ''}">` : ''}
+            ${printImg ? `
+              <img src="${printImg}" alt="print" title="print"
+                   style="position:absolute; right:-6px; bottom:-6px; width:28px; height:28px; border-radius:6px; box-shadow:0 0 0 2px #fff">
+            ` : ''}
+          </div>
+          <div>
             <h4 style="margin:0 0 6px">${it.title || p?.title || ''}</h4>
-            <div class="muted">${price != null ? money(price) : ''}</div>
+            <div class="muted">
+              ${qty > 1 ? `${money(unit)} × ${qty} = ${money(line)}` : `${money(line)}`}
+              ${extra ? `<div style="font-size:12px">Includes print +${money(extra)}</div>` : ''}
+              ${it?.size ? `<div style="font-size:12px">Size: ${it.size}</div>` : ''}
             </div>
+          </div>
         `;
         grid.appendChild(card);
-        });
+      });
 
-        box.appendChild(grid);
-        root.appendChild(box);
+      box.appendChild(grid);
+      root.appendChild(box);
     });
-    }
-
+  }
 
   (async () => {
     await ensureLoggedIn();
     const [orders, products] = await Promise.all([loadMyItems(), loadProducts()]);
     const prodMap = new Map(products.map(p => [String(p.id), p]));
     render(orders, prodMap);
-    })().catch(err => {
+  })().catch(err => {
     console.error(err);
     alert('Failed to load My Items');
   });
-
-  </script>
+</script>
   <script src="/nav.js"></script>
   <script>renderNav('My Items');</script>
 </body>
