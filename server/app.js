@@ -17,6 +17,9 @@ const PORT = 3000;
 
 app.use(express.json());
 app.use(cookieParser());
+app.get('/', (req, res) => {
+  res.redirect('/store.html');
+});
 app.get('/api/whoami', (req, res) => {
   res.json({ username: req.cookies?.username || null });
 });
